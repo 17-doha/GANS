@@ -6,7 +6,6 @@ from generator_model import building_generator
 from discriminator_model import building_discriminator
 from gan_model import building_gan
 from trainer import training_gan
-from discriminator_train import training_discriminator
 import tensorflow as tf
 from visualizer import visualize_10
 np.random.seed(42)
@@ -25,7 +24,7 @@ X_gan = data['X_gan']
 print("Loaded real images shape:", X_real_imgs.shape)
 print("Loaded fake images shape:", X_fake_imgs.shape)
 # Loading tensorflow related libraries 
-epochs = 50
+epochs = 5
 batch_size = 256 
 epoch_steps = int((2 * X_train.shape[0]/batch_size)/2)
 print(epoch_steps)
@@ -35,7 +34,6 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 noise_dim = 100
 generator = building_generator(noise_dim)
 discriminator = building_discriminator()
-training_discriminator(discriminator, epochs=epochs, n_batch=batch_size)
 gan_model = building_gan(generator, discriminator)
 training_gan(gan_model, discriminator, generator, batch_size=batch_size, epochs=epochs, epoch_steps=epoch_steps, noise_dim=noise_dim)
 

@@ -3,33 +3,41 @@ from data_generator import generate_img_using_model, generate_real_images
 from discriminator_model import building_discriminator
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 def training_gan(gan_model, discriminator, generator, batch_size=256, epochs=100, epoch_steps=468, noise_dim=100):
-    # Training the model by enumerating epochs 
+    half_batch = batch_size // 2 # Fix the batch imbalance
+    
     for epoch in range(0,epochs): 
         for step in range(0, epoch_steps):
             # Generating fake images 
-            X_fake, y_fake = generate_img_using_model(generator, noise_dim, batch_size)
+            X_fake, y_fake = generate_img_using_model(generator, noise_dim, half_batch)
             # Generating real images 
-            X_real, y_real = generate_real_images(batch_size)
-            # Creating training set
+            X_real, y_real = generate_real_images(half_batch)
+            
+            # Creating training set (Total size is now 256, not 512)
             X_batch = np.concatenate([X_real, X_fake], axis = 0)
             y_batch = np.concatenate([y_real, y_fake], axis = 0)      
-            # Training the discriminator
+            
+            # --- FIX: UNFREEZE discriminator to allow its weights to update ---
+            discriminator.trainable = True
             d_loss, d_acc = discriminator.train_on_batch(X_batch, y_batch)
-            # Gnerating noise input for the generator 
+            
+            # Generating noise input for the generator 
             X_gan = np.random.randn(noise_dim * batch_size)
             X_gan = X_gan.reshape(batch_size, noise_dim)
             y_gan = np.ones((batch_size, 1))
-            # Training the GAN model using the generated noise 
-            gan_loss = gan_model.train_on_batch(X_gan,y_gan)
-            # Report the trai
+            
+            # --- FIX: FREEZE discriminator so GAN only updates Generator ---
+            discriminator.trainable = False
+            gan_loss = gan_model.train_on_batch(X_gan, y_gan)
+            
+            # Report the progress
             report_porgress(epoch=epoch, step=step, d_loss=d_loss, gan_loss=gan_loss, noise_dim=noise_dim, epoch_steps=epoch_steps)
+            
         # Report the progress on the full epoch
         report_porgress(epoch=epoch, step=step, d_loss=d_loss, gan_loss=gan_loss, noise_dim=noise_dim, epoch_steps=epoch_steps, generator=generator, discriminator=discriminator, eoe=True)
 
-import os
-import matplotlib.pyplot as plt
 
 def report_porgress(epoch, step, d_loss, gan_loss, noise_dim = None, epoch_steps= None, generator=None, discriminator=None, n_samples=100, eoe= False):
     if eoe and step == (epoch_steps-1):
