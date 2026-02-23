@@ -26,7 +26,11 @@ def generate_img_using_model(generator, noise_dim, n_samples):
     y_fake = np.zeros((n_samples, 1))
     return fake_imgs, y_fake
 
-
+def generate_latent_points(noise_dim, batch_size):
+    X_gan = np.random.randn(noise_dim * batch_size)
+    X_gan = X_gan.reshape(batch_size, noise_dim)
+    y_gan = np.ones((batch_size, 1))
+    return X_gan, y_gan
 (X_train, y_train), (X_test, y_test) = load_data()
 
 print('Shape of the training data', X_train.shape, ', the shape of the labels:', y_train.shape)

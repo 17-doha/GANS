@@ -1,34 +1,31 @@
 
-from data_generator import generate_img_using_model, generate_real_images
+from data_generator import generate_img_using_model, generate_real_images, generate_latent_points
 from discriminator_model import building_discriminator
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+
 def training_gan(gan_model, discriminator, generator, batch_size=256, epochs=100, epoch_steps=468, noise_dim=100):
-    half_batch = batch_size // 2 # Fix the batch imbalance
+    half_batch = batch_size // 2 
     
     for epoch in range(0,epochs): 
         for step in range(0, epoch_steps):
-            # Generating fake images 
+         
             X_fake, y_fake = generate_img_using_model(generator, noise_dim, half_batch)
-            # Generating real images 
+           
             X_real, y_real = generate_real_images(half_batch)
             
             # Creating training set (Total size is now 256, not 512)
             X_batch = np.concatenate([X_real, X_fake], axis = 0)
             y_batch = np.concatenate([y_real, y_fake], axis = 0)      
             
-            # --- FIX: UNFREEZE discriminator to allow its weights to update ---
             discriminator.trainable = True
             d_loss, d_acc = discriminator.train_on_batch(X_batch, y_batch)
             
             # Generating noise input for the generator 
-            X_gan = np.random.randn(noise_dim * batch_size)
-            X_gan = X_gan.reshape(batch_size, noise_dim)
-            y_gan = np.ones((batch_size, 1))
+            X_gan, y_gan = generate_latent_points(noise_dim, batch_size)
             
-            # --- FIX: FREEZE discriminator so GAN only updates Generator ---
             discriminator.trainable = False
             gan_loss = gan_model.train_on_batch(X_gan, y_gan)
             
