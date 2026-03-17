@@ -24,13 +24,14 @@ X_gan = data['X_gan']
 print("Loaded real images shape:", X_real_imgs.shape)
 print("Loaded fake images shape:", X_fake_imgs.shape)
 # Loading tensorflow related libraries 
-epochs = 10
+epochs = 5
 
 batch_size = 256 
 epoch_steps = int((2 * X_train.shape[0]/batch_size)/2)
 print(epoch_steps)
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 
 noise_dim = 100
 generator = building_generator(noise_dim)
