@@ -50,11 +50,11 @@ print(
 )
 
 
-## Visualize the first 10 images in the training set
+# Visualize the first 10 images in the training set
 visualize_10(X_train)
 
 
-## Reshape data to be 2D and normalize values to be between 0 and 1
+# Reshape data to be 2D and normalize values to be between 0 and 1
 X_train = np.reshape(X_train, (X_train.shape[0], 28 * 28))
 X_test = np.reshape(X_test, (X_test.shape[0], 28 * 28))
 
@@ -67,9 +67,9 @@ X_fake_imgs, y_fake = generate_fake_images(int(256 / 2))
 visualize_10(X_real_imgs)
 visualize_10(X_fake_imgs)
 
-# ── Generate latent vectors for the GAN ──
+
 X_gan = np.random.randn(100 * 10)
 X_gan = X_gan.reshape(10, 100)
 
-## Save the generated data
+# Save the generated data
 save(X_real_imgs, y_real, X_fake_imgs, y_fake, X_train, X_test, X_gan)

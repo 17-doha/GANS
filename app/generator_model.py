@@ -1,4 +1,3 @@
-import tensorflow as tf
 from tensorflow.keras.layers import Dense, Conv2D
 from tensorflow.keras.layers import Conv2DTranspose, Reshape, LeakyReLU
 from tensorflow.keras.models import Sequential
