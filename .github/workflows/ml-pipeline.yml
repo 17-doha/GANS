@@ -34,3 +34,9 @@ jobs:
 
       - name: Run Docker container
         run: docker run gans-app
+
+      - name: Upload README as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-doc
+          path: README.md
