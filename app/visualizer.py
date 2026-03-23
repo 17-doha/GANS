@@ -19,7 +19,7 @@ def visualize_10(X_data):
 
 
 def plot_actual_vs_generated(generator, noise_dim, n_samples=10):
-    from data_generator import generate_real_images, generate_img_using_model
+    from app.data_generator import generate_real_images, generate_img_using_model
 
     X_real, _ = generate_real_images(n_samples)
     X_fake, _ = generate_img_using_model(generator, noise_dim, n_samples)
