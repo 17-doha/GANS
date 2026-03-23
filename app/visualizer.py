@@ -18,10 +18,11 @@ def visualize_10(X_data):
     plt.show()
 
 
-def plot_actual_vs_generated(generator, noise_dim, n_samples=10):
+# Change the definition to match this exactly:
+def plot_actual_vs_generated(generator, X_train, noise_dim, n_samples=10):
     from app.data_generator import generate_real_images, generate_img_using_model
 
-    X_real, _ = generate_real_images(n_samples)
+    X_real, _ = generate_real_images(X_train, n_samples)
     X_fake, _ = generate_img_using_model(generator, noise_dim, n_samples)
 
     plt.figure(figsize=(10, 2.5))
