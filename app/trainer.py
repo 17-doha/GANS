@@ -1,122 +1,146 @@
-from app.data_generator import (
-    generate_img_using_model,
-    generate_real_images,
-    generate_latent_points,
-)
+import os
+import torch
+import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import mlflow
+
+def calculate_accuracy(predictions, labels):
+    """Helper function to replace Keras's model.evaluate()"""
+    preds_rounded = (predictions >= 0.5).float()
+    correct = (preds_rounded == labels).float().sum()
+    return (correct / len(labels)).item()
+
+def report_progress(
+    epoch, step, d_loss, g_loss, generator, discriminator, criterion, 
+    X_train, noise_dim, epoch_steps, n_samples=100, eoe=False, device="cpu"
+):
+    if eoe and step == (epoch_steps - 1):
+        # --- Evaluate Full Epoch ---
+        generator.eval()
+        discriminator.eval()
+        
+        with torch.no_grad():
+            # 1. Real Images Accuracy
+            idx = np.random.randint(0, X_train.shape[0], n_samples)
+            X_real = torch.tensor(X_train[idx], dtype=torch.float32).to(device)
+            y_real = torch.ones((n_samples, 1)).to(device)
+            
+            pred_real = discriminator(X_real)
+            acc_real = calculate_accuracy(pred_real, y_real)
+
+            # 2. Fake Images Accuracy
+            noise = torch.randn(n_samples, noise_dim).to(device)
+            X_fake = generator(noise)
+            y_fake = torch.zeros((n_samples, 1)).to(device)
+            
+            pred_fake = discriminator(X_fake)
+            acc_fake = calculate_accuracy(pred_fake, y_fake)
+
+        os.makedirs("output", exist_ok=True)
+
+        # Plot images (Convert PyTorch tensors back to Numpy for matplotlib)
+        X_fake_np = X_fake.cpu().numpy()
+        for i in range(10 * 10):
+            plt.subplot(10, 10, 1 + i)
+            plt.axis("off")
+            plt.imshow(X_fake_np[i, :, :, 0] if X_fake_np.ndim == 4 else X_fake_np[i, 0, :, :], cmap="gray_r")
+
+        filename = f"output/generated_examples_epoch{epoch + 1:04d}.png"
+        plt.savefig(filename)
+        plt.close()
+
+        print(f"Discriminator Accuracy on real: {acc_real * 100:.0f}%, on fake: {acc_fake * 100:.0f}%")
+
+        # LOG ACCURACY & IMAGES TO MLFLOW
+        mlflow.log_metric("accuracy_real", acc_real, step=epoch)
+        mlflow.log_metric("accuracy_fake", acc_fake, step=epoch)
+        mlflow.log_artifact(filename, artifact_path="generated_images")
+
+        # Save PyTorch Model weights
+        torch.save(generator.state_dict(), "generator_model.pt")
+        
+        generator.train()
+        discriminator.train()
+    else:
+        # --- Single Step Report ---
+        print(f"Training progress in epoch #{epoch}, step {step}, discriminator loss={d_loss:.3f} , generator loss={g_loss:.3f}")
 
 
 def training_gan(
-    gan_model,
-    discriminator,
-    generator,
-    batch_size=256,
-    epochs=100,
-    epoch_steps=468,
-    noise_dim=100,
+    generator, discriminator, opt_g, opt_d, criterion, X_train,
+    batch_size=256, epochs=100, epoch_steps=468, noise_dim=100, lr=0.001, device="cpu"
 ):
     half_batch = batch_size // 2
+    
+    with mlflow.start_run():
+        mlflow.set_tag("student_id", "202200701")
+        
+        mlflow.log_param("lr", lr)
+        mlflow.log_param("epochs", epochs)
+        mlflow.log_param("batch_size", batch_size)
+        mlflow.log_param("noise_dim", noise_dim)
 
-    for epoch in range(0, epochs):
-        for step in range(0, epoch_steps):
+        generator.to(device)
+        discriminator.to(device)
 
-            X_fake, y_fake = generate_img_using_model(generator, noise_dim, half_batch)
+        for epoch in range(epochs):
+            for step in range(epoch_steps):
+                
+                # ==========================================
+                # 1. Train Discriminator
+                # ==========================================
+                opt_d.zero_grad()
+                
+                # Real data
+                idx = np.random.randint(0, X_train.shape[0], half_batch)
+                X_real = torch.tensor(X_train[idx], dtype=torch.float32).to(device)
+                y_real = torch.ones((half_batch, 1)).to(device)
+                
+                d_real_loss = criterion(discriminator(X_real), y_real)
 
-            X_real, y_real = generate_real_images(half_batch)
+                # Fake data
+                noise = torch.randn(half_batch, noise_dim).to(device)
+                X_fake = generator(noise)
+                y_fake = torch.zeros((half_batch, 1)).to(device)
+                
+                # Use .detach() so we don't backpropagate through the Generator
+                d_fake_loss = criterion(discriminator(X_fake.detach()), y_fake)
 
-            # Creating training set (Total size is now 256, not 512)
-            X_batch = np.concatenate([X_real, X_fake], axis=0)
-            y_batch = np.concatenate([y_real, y_fake], axis=0)
+                d_loss = (d_real_loss + d_fake_loss) / 2
+                d_loss.backward()
+                opt_d.step()
 
-            discriminator.trainable = True
-            d_loss, d_acc = discriminator.train_on_batch(X_batch, y_batch)
+                # ==========================================
+                # 2. Train Generator
+                # ==========================================
+                opt_g.zero_grad()
+                
+                noise_g = torch.randn(batch_size, noise_dim).to(device)
+                X_gan = generator(noise_g)
+                # Generator wants the Discriminator to think the fake images are REAL (1)
+                y_gan = torch.ones((batch_size, 1)).to(device) 
+                
+                g_loss = criterion(discriminator(X_gan), y_gan)
+                g_loss.backward()
+                opt_g.step()
 
-            # Generating noise input for the generator
-            X_gan, y_gan = generate_latent_points(noise_dim, batch_size)
+                # Report progress
+                report_progress(
+                    epoch, step, d_loss.item(), g_loss.item(), generator, discriminator, 
+                    criterion, X_train, noise_dim, epoch_steps, device=device
+                )
 
-            discriminator.trainable = False
-            gan_loss = gan_model.train_on_batch(X_gan, y_gan)
+            # --- Log metrics at end of Epoch ---
+            mlflow.log_metric("discriminator_loss", d_loss.item(), step=epoch)
+            mlflow.log_metric("generator_loss", g_loss.item(), step=epoch)
 
-            # Report the progress
-            report_porgress(
-                epoch=epoch,
-                step=step,
-                d_loss=d_loss,
-                gan_loss=gan_loss,
-                noise_dim=noise_dim,
-                epoch_steps=epoch_steps,
+            # Trigger end-of-epoch reports
+            report_progress(
+                epoch, step, d_loss.item(), g_loss.item(), generator, discriminator, 
+                criterion, X_train, noise_dim, epoch_steps, eoe=True, device=device
             )
-
-        # Report the progress on the full epoch
-        report_porgress(
-            epoch=epoch,
-            step=step,
-            d_loss=d_loss,
-            gan_loss=gan_loss,
-            noise_dim=noise_dim,
-            epoch_steps=epoch_steps,
-            generator=generator,
-            discriminator=discriminator,
-            eoe=True,
-        )
-
-
-def report_porgress(
-    epoch,
-    step,
-    d_loss,
-    gan_loss,
-    noise_dim=None,
-    epoch_steps=None,
-    generator=None,
-    discriminator=None,
-    n_samples=100,
-    eoe=False,
-):
-    if eoe and step == (epoch_steps - 1):
-        # Report a full epoch training performance
-        # Sample some real images from the training set
-        X_real, y_real = generate_real_images(n_samples)
-        # Measure the accuracy of the discrinminator on real sampled images
-        _, acc_real = discriminator.evaluate(X_real, y_real, verbose=0)
-        # Generates fake examples
-        X_fake, y_fake = generate_img_using_model(generator, noise_dim, n_samples)
-        # evaluate discriminator on fake images
-        _, acc_fake = discriminator.evaluate(X_fake, y_fake, verbose=0)
-
-        # 1. Ensure the output directory exists
-        os.makedirs("output", exist_ok=True)
-
-        # summarize discriminator performance
-        # plot images
-        for i in range(10 * 10):
-            # define subplot
-            plt.subplot(10, 10, 1 + i)
-            # turn off axis
-            plt.axis("off")
-            # plot raw pixel data
-            plt.imshow(X_fake[i, :, :, 0], cmap="gray_r")
-
-        # 2. Update the filename to include the output/ folder path
-        filename = "output/generated_examples_epoch%04d.png" % (epoch + 1)
-        plt.savefig(filename)
-
-        # 3. Clear the plot to prevent memory leaks across epochs
-        plt.close()
-
-        print(
-            "Disciminator Accuracy on real images: %.0f%%, on fake images: %.0f%%"
-            % (acc_real * 100, acc_fake * 100)
-        )
-
-        # save the generator model tile file
-        filename = "generator_model.h5"
-        generator.save(filename)
-    else:
-        # Report a single step training performance
-        print(
-            "Training progress in epoch #%d, step %d, discriminator loss=%.3f , generator loss=%.3f"
-            % (epoch, step, d_loss, gan_loss)
-        )
+            
+            # Save PyTorch model to MLflow
+            if epoch % 10 == 0 or epoch == epochs - 1:
+                mlflow.pytorch.log_model(generator, f"generator-epoch-{epoch}")
