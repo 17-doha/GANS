@@ -1,14 +1,14 @@
-from keras.datasets.mnist import load_data
-from matplotlib.pylab import randint
-from visualizer import visualize_10
 import numpy as np
 import torch
-from save_data import save
+from torchvision import datasets
+from app.visualizer import visualize_10
+from app.save_data import save
 
-def generate_real_images(n_samples):
-    real_imgs = X_train[randint(0, X_train.shape[0], n_samples)]
+def generate_real_images(X_train, n_samples):
+    idx = np.random.randint(0, X_train.shape[0], n_samples)
+    real_imgs = X_train[idx]
     # Reshaping to PyTorch standard: (Batch, Channels, Height, Width)
-    real_imgs = real_imgs.reshape(real_imgs.shape[0], 1, 28, 28)
+    real_imgs = real_imgs.reshape(n_samples, 1, 28, 28)
     y_real = np.ones((n_samples, 1))
     return real_imgs, y_real
 
@@ -19,13 +19,10 @@ def generate_fake_images(n_samples):
 
 def generate_img_using_model(generator, noise_dim, n_samples):
     noise = torch.randn(n_samples, noise_dim)
-    
-    # Use PyTorch evaluation mode
     generator.eval()
     with torch.no_grad():
         fake_imgs = generator(noise).cpu().numpy()
-    generator.train() # Set back to train mode just in case
-    
+    generator.train() 
     y_fake = np.zeros((n_samples, 1))
     return fake_imgs, y_fake
 
@@ -34,14 +31,16 @@ def generate_latent_points(noise_dim, batch_size):
     y_gan = np.ones((batch_size, 1))
     return X_gan, y_gan
 
-# --- SCRIPT EXECUTION ---
 if __name__ == "__main__":
-    (X_train_raw, y_train), (X_test_raw, y_test) = load_data()
+    print("Downloading MNIST using PyTorch...")
+    # Load MNIST using PyTorch instead of Keras
+    train_data = datasets.MNIST(root='./data', train=True, download=True)
+    test_data = datasets.MNIST(root='./data', train=False, download=True)
 
-    print("Shape of the training data", X_train_raw.shape)
+    X_train_raw = train_data.data.numpy()
+    X_test_raw = test_data.data.numpy()
 
-    # Visualize the first 10 images
-    visualize_10(X_train_raw)
+    print("Shape of the training data:", X_train_raw.shape)
 
     # Flatten and normalize data
     X_train = np.reshape(X_train_raw, (X_train_raw.shape[0], 28 * 28))
@@ -50,7 +49,7 @@ if __name__ == "__main__":
     X_train = X_train / 255.0
     X_test = X_test / 255.0
 
-    X_real_imgs, y_real = generate_real_images(128)
+    X_real_imgs, y_real = generate_real_images(X_train, 128)
     X_fake_imgs, y_fake = generate_fake_images(128)
 
     X_gan = np.random.randn(10, 100)

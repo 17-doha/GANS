@@ -22,9 +22,9 @@ def report_progress(
         
         with torch.no_grad():
             # 1. Real Images Accuracy
-            idx = np.random.randint(0, X_train.shape[0], n_samples)
-            X_real = torch.tensor(X_train[idx], dtype=torch.float32).to(device)
-            y_real = torch.ones((n_samples, 1)).to(device)
+            idx = torch.randint(0, X_train.shape[0], (n_samples,), device=device)
+            X_real = X_train[idx]
+            y_real = torch.ones((n_samples, 1), device=device)
             
             pred_real = discriminator(X_real)
             acc_real = calculate_accuracy(pred_real, y_real)
@@ -63,9 +63,8 @@ def report_progress(
         generator.train()
         discriminator.train()
     else:
-        # --- Single Step Report ---
-        print(f"Training progress in epoch #{epoch}, step {step}, discriminator loss={d_loss:.3f} , generator loss={g_loss:.3f}")
-
+        if step % 50 == 0:
+            print(f"Training progress in epoch #{epoch}, step {step}, discriminator loss={d_loss:.3f} , generator loss={g_loss:.3f}")
 
 def training_gan(
     generator, discriminator, opt_g, opt_d, criterion, X_train,
@@ -93,9 +92,9 @@ def training_gan(
                 opt_d.zero_grad()
                 
                 # Real data
-                idx = np.random.randint(0, X_train.shape[0], half_batch)
-                X_real = torch.tensor(X_train[idx], dtype=torch.float32).to(device)
-                y_real = torch.ones((half_batch, 1)).to(device)
+                idx = torch.randint(0, X_train.shape[0], (half_batch,), device=device)
+                X_real = X_train[idx]
+                y_real = torch.ones((half_batch, 1), device=device)
                 
                 d_real_loss = criterion(discriminator(X_real), y_real)
 

@@ -19,10 +19,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 data = np.load("dataset/gan_data.npz")
-X_train = data["X_train_processed"]
+X_train_np = data["X_train_processed"]
+
+X_train_np = X_train_np.reshape(-1, 1, 28, 28)
+
+X_train = torch.tensor(X_train_np, dtype=torch.float32).to(device)
+
 X_gan = data["X_gan"]
-X_train = X_train.reshape(-1, 1, 28, 28)
-# X_gan = X_gan.reshape(-1, 1, 28, 28)
 
 
 epochs = 5

@@ -1,12 +1,13 @@
-FROM continuumio/miniconda3
+FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY environment.yml .
+COPY requirements.txt .
 
-RUN conda env create -f environment.yml
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Updated the path to point directly to the main.py file inside the app folder
-CMD ["conda", "run", "-n", "mlops_assignmemt", "python", "-m", "app.main"]
+RUN python -m app.data_generator
+
+CMD ["python", "-m", "app.main"]

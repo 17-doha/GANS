@@ -1,0 +1,8 @@
+numpy
+matplotlib
+mlflow
+
+# This tells pip to grab the lightweight CPU-only version of PyTorch!
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
