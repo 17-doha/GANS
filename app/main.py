@@ -5,11 +5,10 @@ import torch.optim as optim
 import numpy as np
 import mlflow
 
-# Assuming your imports from app still exist and are converted to PyTorch
-from generator_model import building_generator
-from discriminator_model import building_discriminator
-from trainer import training_gan
-from visualizer import plot_actual_vs_generated, visualize_10
+from app.generator_model import building_generator
+from app.discriminator_model import building_discriminator
+from app.trainer import training_gan
+from app.visualizer import plot_actual_vs_generated, visualize_10
 
 np.random.seed(42)
 torch.manual_seed(42)
