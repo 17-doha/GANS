@@ -76,4 +76,5 @@ with torch.no_grad():
 print("Generated images shape:", generated_images.shape)
 
 visualize_10(generated_images)
-plot_actual_vs_generated(generator, noise_dim=100, n_samples=10)
+# Pass X_train to the visualizer on the last line
+plot_actual_vs_generated(generator, X_train, noise_dim=100, n_samples=10)
