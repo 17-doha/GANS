@@ -1,0 +1,5 @@
+outs:
+- md5: 9f4d4bbca61e871dccd6fe77ca580b57
+  size: 22954603
+  hash: md5
+  path: gan_data.npz
