@@ -32,10 +32,10 @@ except KeyError as e:
     sys.exit(1)
 
 print("\n Current Model Metrics:")
-print(f" - Generator Loss: {gen_loss:.4f} (Target: < 1.0)")
-print(f" - Discriminator Loss: {disc_loss:.4f} (Target: < 2.0)")
-print(f" - Accuracy (Real): {acc_real:.4f} (Target: > 0.7)")
-print(f" - Accuracy (Fake): {acc_fake:.4f} (Target: > 0.7)\n")
+print(f" - Generator Loss: {gen_loss:.4f}")
+print(f" - Discriminator Loss: {disc_loss:.4f}")
+print(f" - Accuracy (Real): {acc_real:.4f}")
+print(f" - Accuracy (Fake): {acc_fake:.4f}\n")
 
 passed_all_checks = True
 
