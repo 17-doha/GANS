@@ -1,5 +1,7 @@
 import sys
+import mlflow
 from mlflow.tracking import MlflowClient
+mlflow.set_tracking_uri("https://dagshub.com/17-doha/GANS.mlflow")
 
 try:
     with open("model_info.txt", "r") as f:

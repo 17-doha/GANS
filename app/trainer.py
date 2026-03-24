@@ -71,7 +71,7 @@ def training_gan(
     batch_size=256, epochs=100, epoch_steps=468, noise_dim=100, lr=0.001, device="cpu"
 ):
     half_batch = batch_size // 2
-    
+    mlflow.set_tracking_uri("https://dagshub.com/17-doha/GANS.mlflow")
     with mlflow.start_run() as run:
         mlflow.set_tag("student_id", "202200701")
         
