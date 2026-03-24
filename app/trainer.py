@@ -72,7 +72,7 @@ def training_gan(
 ):
     half_batch = batch_size // 2
     
-    with mlflow.start_run():
+    with mlflow.start_run() as run:
         mlflow.set_tag("student_id", "202200701")
         
         mlflow.log_param("lr", lr)
@@ -143,3 +143,7 @@ def training_gan(
             # Save PyTorch model to MLflow
             if epoch % 10 == 0 or epoch == epochs - 1:
                 mlflow.pytorch.log_model(generator, f"generator-epoch-{epoch}")
+        
+        run_id = run.info.run_id
+        with open("model_info.txt", "w") as f:
+             f.write(run_id)
