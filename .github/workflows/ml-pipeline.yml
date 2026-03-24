@@ -41,4 +41,36 @@ jobs:
           name: model-info
           path: model_info.txt
 
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install MLflow
+        run: pip install mlflow
+
+      - name: Download a Build   
+        uses: actions/download-artifact@v4
+        with:
+          name: mlflow-run-info
+          path: .
+      -name: Run Threshold Check
+        env: 
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI}}
+          MLFLOW_TRACKING_USERNAME: 17-doha 
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+
+        run: python -m app.check_threshold
+      
+      - name: Mock Docker Build
+        run: |
+          echo "Building Docker image for Run ID: $(cat model_info.txt)"
+
   
