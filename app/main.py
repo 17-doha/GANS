@@ -43,8 +43,10 @@ opt_g = optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 opt_d = optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 criterion = nn.BCELoss()
 
-# mlflow.set_tracking_uri("sqlite:///mlruns.db")
-mlflow.set_experiment("Assignment3_DohaHemdan")
+mlflow.set_tracking_uri("https://dagshub.com/17-doha/GANS.mlflow")
+    
+    # 2. Set a NEW experiment name to bypass the DagsHub cache bug
+mlflow.set_experiment("GAN_Deployment_Run")
 
 training_gan(
     generator=generator, 
