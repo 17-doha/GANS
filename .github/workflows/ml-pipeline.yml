@@ -61,7 +61,7 @@ jobs:
         with:
           name: mlflow-run-info
           path: .
-      -name: Run Threshold Check
+      - name: Run Threshold Check
         env: 
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI}}
           MLFLOW_TRACKING_USERNAME: 17-doha 
