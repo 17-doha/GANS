@@ -27,7 +27,7 @@ X_train = torch.tensor(X_train_np, dtype=torch.float32).to(device)
 X_gan = data["X_gan"]
 
 
-epochs = 2
+epochs = 15
 batch_size = 256
 epoch_steps = int((2 * X_train.shape[0] / batch_size) / 2)
 learning_rate = 2e-4
