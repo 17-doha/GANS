@@ -59,7 +59,7 @@ jobs:
       - name: Download a Build
         uses: actions/download-artifact@v4
         with:
-          name: model-info   # <-- CHANGED FROM mlflow-info
+          name: model-info   
           path: .
       - name: Run Threshold Check
         env:
