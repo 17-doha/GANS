@@ -1,11 +1,19 @@
-FROM continuumio/miniconda3
-
+FROM python:3.10-slim
 WORKDIR /app
 
-COPY environment.yml .
+ARG RUN_ID
+ARG DAGSHUB_TOKEN
 
-RUN conda env create -f environment.yml
+ENV MLFLOW_TRACKING_URI="https://dagshub.com/17-doha/GANS.mlflow"
+ENV MLFLOW_TRACKING_USERNAME="17-doha"
+ENV MLFLOW_TRACKING_PASSWORD=$DAGSHUB_TOKEN
 
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 COPY . .
 
-CMD ["conda", "run", "-n", "mlops_assignmemt", "python", "main.py"]
+RUN mlflow artifacts download --run-id $RUN_ID --dst-path ./downloaded_model
+
+RUN python -m app.data_generator
+
+CMD ["python", "-m", "app.main"]

@@ -1,46 +1,70 @@
 name: ML Model CI
 
-on:
-  push:
-    branches-ignore:
-      - 'main'
+on: ['push']
 
 jobs:
-  validate-and-test:
+  linter:
     runs-on: ubuntu-latest
-    steps:    
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      - name: Install Dependencies
-        run: | 
-          pip install flake8
-          # We must install torch here so the next step doesn't crash!
-          pip install --extra-index-url https://download.pytorch.org/whl/cpu torch
+      - name: Install Flake8
+        run: pip install flake8
 
-      - name: Linter Check
-        run: | 
-          # --exit-zero ensures formatting issues don't crash your whole pipeline
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-      - name: Model Dry Test
-        run: |
-          python -c "import torch; print('Model environment ready!')"
-
+      - name: Run Flake8 Linter
+        run: flake8 app/
   train:
-    needs: validate-and-test
+    needs: linter
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[run-train]')
     runs-on: ubuntu-latest
-    steps:       
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t gans-app .
-      
-      - name: Run Docker container
-        run: docker run gans-app
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure DVC Credentials
+        run: |
+          dvc remote modify origin --local access_key_id ${{ secrets.DAGSHUB_TOKEN }}
+          dvc remote modify origin --local secret_access_key ${{ secrets.DAGSHUB_TOKEN }}
+
+      - name: Pull Data (DVC)
+        run: dvc pull -r origin
+
+      - name: Train and Log MLflow
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI}}
+          MLFLOW_TRACKING_USERNAME: 17-doha
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        run: python -m app.main
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-info
+          path: model_info.txt
+
+      - name: Run on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-report
+          path: logs/error_logs.txt
+
+      - name: Run Always
+        if: always()
+        run: echo "Cleaning up temporary cloud volumes..."
+
+  

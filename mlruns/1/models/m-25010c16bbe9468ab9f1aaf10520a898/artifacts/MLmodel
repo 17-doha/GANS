@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Dahdouha/Year 4 - Sem 2/MLOPs/Assignment_1/mlruns/1/models/m-25010c16bbe9468ab9f1aaf10520a898/artifacts
+flavors:
+  python_function:
+    config:
+      device: null
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.10.19
+  pytorch:
+    code: null
+    model_data: data
+    pytorch_version: 2.10.0+cpu
+mlflow_version: 3.10.1
+model_id: m-25010c16bbe9468ab9f1aaf10520a898
+model_size_bytes: 3171235
+model_uuid: m-25010c16bbe9468ab9f1aaf10520a898
+prompts: null
+run_id: 845f6744a94a4155b7277ec7d05f1aaf
+utc_time_created: '2026-03-23 19:52:32.577621'
