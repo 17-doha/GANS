@@ -1,12 +1,27 @@
 name: ML Model CI
 
-on:
-  push:
-    branches-ignore:
-      - "main"
+on: ['push']
 
 jobs:
-  validate:
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Flake8
+        run: pip install flake8
+
+      - name: Run Flake8 Linter
+        run: flake8 app/
+  train:
+    needs: linter
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[run-train]')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -41,38 +56,15 @@ jobs:
           name: model-info
           path: model_info.txt
 
-  deploy:
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Run on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          python-version: "3.10"
+          name: crash-report
+          path: logs/error_logs.txt
 
-      - name: Install MLflow
-        run: pip install mlflow
+      - name: Run Always
+        if: always()
+        run: echo "Cleaning up temporary cloud volumes..."
 
-      - name: Download a Build
-        uses: actions/download-artifact@v4
-        with:
-          name: model-info   # <-- CHANGED FROM mlflow-info
-          path: .
-      - name: Run Threshold Check
-        env:
-          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI}}
-          MLFLOW_TRACKING_USERNAME: 17-doha
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-
-        run: python -m app.check_threshold
-
-      - name: Docker Build
-        run: |
-          RUN_ID=$(cat model_info.txt)
-          docker build \
-            --build-arg RUN_ID=$RUN_ID \
-            --build-arg DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }} \
-            -t gan-deployment .
+  

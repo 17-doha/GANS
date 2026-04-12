@@ -9,10 +9,11 @@ ENV MLFLOW_TRACKING_USERNAME="17-doha"
 ENV MLFLOW_TRACKING_PASSWORD=$DAGSHUB_TOKEN
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 COPY . .
 
 RUN mlflow artifacts download --run-id $RUN_ID --dst-path ./downloaded_model
 
 RUN python -m app.data_generator
+
 CMD ["python", "-m", "app.main"]
