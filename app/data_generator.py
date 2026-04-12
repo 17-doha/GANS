@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 from torchvision import datasets
-from app.visualizer import visualize_10
 from app.save_data import save
+
 
 def generate_real_images(X_train, n_samples):
     idx = np.random.randint(0, X_train.shape[0], n_samples)
@@ -12,30 +12,34 @@ def generate_real_images(X_train, n_samples):
     y_real = np.ones((n_samples, 1))
     return real_imgs, y_real
 
+
 def generate_fake_images(n_samples):
     fake_imgs = np.random.rand(n_samples, 1, 28, 28)
     y_fake = np.zeros((n_samples, 1))
     return fake_imgs, y_fake
+
 
 def generate_img_using_model(generator, noise_dim, n_samples):
     noise = torch.randn(n_samples, noise_dim)
     generator.eval()
     with torch.no_grad():
         fake_imgs = generator(noise).cpu().numpy()
-    generator.train() 
+    generator.train()
     y_fake = np.zeros((n_samples, 1))
     return fake_imgs, y_fake
+
 
 def generate_latent_points(noise_dim, batch_size):
     X_gan = np.random.randn(batch_size, noise_dim)
     y_gan = np.ones((batch_size, 1))
     return X_gan, y_gan
 
+
 if __name__ == "__main__":
     print("Downloading MNIST using PyTorch...")
     # Load MNIST using PyTorch instead of Keras
-    train_data = datasets.MNIST(root='./data', train=True, download=True)
-    test_data = datasets.MNIST(root='./data', train=False, download=True)
+    train_data = datasets.MNIST(root="./data", train=True, download=True)
+    test_data = datasets.MNIST(root="./data", train=False, download=True)
 
     X_train_raw = train_data.data.numpy()
     X_test_raw = test_data.data.numpy()

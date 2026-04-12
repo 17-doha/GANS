@@ -1,13 +1,17 @@
 import sys
 import mlflow
 from mlflow.tracking import MlflowClient
+
 mlflow.set_tracking_uri("https://dagshub.com/17-doha/GANS.mlflow")
 
 try:
     with open("model_info.txt", "r") as f:
         run_id = f.read().strip()
 except FileNotFoundError:
-    print("Error: model_info.txt not found! The validate job must have failed to upload it.")
+    print(
+        "Error: model_info.txt not found! The validate job must have failed "
+        "to upload it."
+    )
     sys.exit(1)
 
 print(f"Checking DagsHub MLflow for specific Run ID: {run_id}")

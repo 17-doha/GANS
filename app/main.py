@@ -43,21 +43,26 @@ try:
     discriminator = building_discriminator().to(device)
 
     # Initialize PyTorch Optimizers and Loss Function
-    # PyTorch handles learning rate inside the optimizer, not the model definition
-    opt_g = optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
-    opt_d = optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+    # PyTorch handles learning rate inside the optimizer,
+    # not the model definition
+    opt_g = optim.Adam(
+        generator.parameters(), lr=learning_rate, betas=(0.5, 0.999)
+    )
+    opt_d = optim.Adam(
+        discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999)
+    )
     criterion = nn.BCELoss()
 
     mlflow.set_tracking_uri("https://dagshub.com/17-doha/GANS.mlflow")
-        
+
     # Set a NEW experiment name to bypass the DagsHub cache bug
     mlflow.set_experiment("GAN_Deployment_Run")
 
     training_gan(
-        generator=generator, 
-        discriminator=discriminator, 
-        opt_g=opt_g, 
-        opt_d=opt_d, 
+        generator=generator,
+        discriminator=discriminator,
+        opt_g=opt_g,
+        opt_d=opt_d,
         criterion=criterion,
         X_train=X_train,
         batch_size=batch_size,
@@ -65,13 +70,13 @@ try:
         epoch_steps=epoch_steps,
         noise_dim=noise_dim,
         lr=learning_rate,
-        device=device
+        device=device,
     )
 
     # --- Post Training Generation ---
     # Load the saved PyTorch weights
     generator.load_state_dict(torch.load("generator_model.pt"))
-    generator.eval() # Set to evaluation mode
+    generator.eval()  # Set to evaluation mode
 
     # Generate final images
     with torch.no_grad():
@@ -86,14 +91,15 @@ try:
     # Pass X_train to the visualizer on the last line
     plot_actual_vs_generated(generator, X_train, 100, 10)
 
-except Exception as e:
+except Exception:
     # 2. Catch the error, format the stack trace, and save it to the file
     error_message = traceback.format_exc()
     print("An error occurred! Writing to logs/error_logs.txt...")
     print(error_message)
-    
+
     with open("logs/error_logs.txt", "w") as log_file:
         log_file.write(error_message)
-        
-    # 3. Exit with a non-zero status code so GitHub Actions registers the failure
+
+    # 3. Exit with a non-zero status code so GitHub Actions
+    # registers the failure
     sys.exit(1)

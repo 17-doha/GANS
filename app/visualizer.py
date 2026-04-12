@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 import numpy as np
-import torch
+
 
 def visualize_10(X_data):
     fig, axs = plt.subplots(2, 5)
@@ -12,7 +12,7 @@ def visualize_10(X_data):
                 img = img[0]
             elif img.ndim == 3 and img.shape[-1] == 1:
                 img = img[:, :, 0]
-                
+
             axs[i, j].imshow(img, cmap=plt.get_cmap("gray"))
             axs[i, j].axis("off")
     plt.show()
@@ -20,7 +20,10 @@ def visualize_10(X_data):
 
 # Change the definition to match this exactly:
 def plot_actual_vs_generated(generator, X_train, noise_dim, n_samples=10):
-    from app.data_generator import generate_real_images, generate_img_using_model
+    from app.data_generator import (
+        generate_real_images,
+        generate_img_using_model
+    )
 
     X_real, _ = generate_real_images(X_train, n_samples)
     X_fake, _ = generate_img_using_model(generator, noise_dim, n_samples)
@@ -41,7 +44,12 @@ def plot_actual_vs_generated(generator, X_train, noise_dim, n_samples=10):
         plt.subplot(2, n_samples, 1 + n_samples + i)
         plt.axis("off")
         # Handle PyTorch shape for Matplotlib
-        fake_img = X_fake[i, 0] if type(X_fake) == np.ndarray and X_fake.shape[1] == 1 else X_fake[i, 0].detach().cpu().numpy()
+        # REMOVED THE COLON HERE:
+        fake_img = (
+            X_fake[i, 0]
+            if isinstance(X_fake, np.ndarray) and X_fake.shape[1] == 1
+            else X_fake[i, 0].detach().cpu().numpy()
+        )
         plt.imshow(fake_img, cmap="gray_r")
         if i == n_samples // 2:
             plt.title("GENERATED (FAKE)")
