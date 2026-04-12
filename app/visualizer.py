@@ -55,5 +55,5 @@ def plot_actual_vs_generated(generator, X_train, noise_dim, n_samples=10):
             plt.title("GENERATED (FAKE)")
 
     plt.tight_layout()
-    plt.savefig("output/actual_vs_generated_comparison.png")
+    plt.savefig("output/actuall_vs_generated_comparison.png")
     plt.show()
