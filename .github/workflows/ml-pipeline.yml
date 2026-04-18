@@ -21,7 +21,7 @@ jobs:
         run: flake8 app/
   train:
     needs: linter
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[run-train]')
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[run-train]') && failure()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
