@@ -9,7 +9,7 @@ on:
 
 jobs:
   validate:
-    name: The Integrity Audit
+    name: The Audit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -35,7 +35,7 @@ jobs:
         run: python app/check_data.py
 
   build:
-    name: The Forensic Build
+    name: The Build
     needs: validate
     runs-on: ubuntu-latest
     if: success() && ((github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[build-image]')) || startsWith(github.ref, 'refs/tags/'))
@@ -65,7 +65,7 @@ jobs:
           path: logs_error.txt
 
   deploy:
-    name: The Production Promotion
+    name: The Promotion
     needs: build
     runs-on: ubuntu-latest
     if: success() && startsWith(github.ref, 'refs/tags/')
