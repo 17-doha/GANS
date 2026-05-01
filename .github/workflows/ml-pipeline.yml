@@ -38,7 +38,6 @@ jobs:
     name: The Forensic Build
     needs: validate
     runs-on: ubuntu-latest
-    # Runs if on main WITH the keyword, OR if a tag is pushed
     if: success() && ((github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[build-image]')) || startsWith(github.ref, 'refs/tags/'))
 
     steps:
