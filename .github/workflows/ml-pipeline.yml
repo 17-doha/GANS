@@ -32,7 +32,7 @@ jobs:
         run: dvc pull -r origin
 
       - name: Data Validation
-        run: python check_data.py
+        run: python app/check_data.py
 
   build:
     name: The Forensic Build
