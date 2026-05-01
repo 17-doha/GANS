@@ -1,4 +1,5 @@
-name: Safe Health Pipeline
+name: Safe Health Promotion Pipeline
+
 on:
   push:
     branches:
@@ -11,7 +12,7 @@ jobs:
     name: The Integrity Audit
     runs-on: ubuntu-latest
     steps:
-      - name: Clone Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -22,8 +23,13 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
+      - name: Configure Real DVC Credentials
+        run: |
+          dvc remote modify origin --local access_key_id ${{ secrets.DAGSHUB_TOKEN }}
+          dvc remote modify origin --local secret_access_key ${{ secrets.DAGSHUB_TOKEN }}
+
       - name: Pull Data
-        run: dvc pull
+        run: dvc pull -r origin
 
       - name: Data Validation
         run: python check_data.py
@@ -32,10 +38,11 @@ jobs:
     name: The Forensic Build
     needs: validate
     runs-on: ubuntu-latest
+    # Runs if on main WITH the keyword, OR if a tag is pushed
     if: success() && ((github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[build-image]')) || startsWith(github.ref, 'refs/tags/'))
 
     steps:
-      - name: Clone Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Docker Setup
@@ -44,12 +51,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Docker build
+      - name: Docker Build
         run: |
           docker build \
             --build-arg RUN_ID=${{ secrets.MLFLOW_RUN_ID }} \
             --build-arg DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }} \
-            -t ${{ secrets.DOCKER_USERNAME }}/app:latest . > logs_error.txt 2>&1
+            -t ${{ secrets.DOCKER_USERNAME }}/safe-health-app:latest . > logs_error.txt 2>&1
 
       - name: Upload Error Logs
         if: failure()
@@ -65,5 +72,5 @@ jobs:
     if: success() && startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - name: Deploy
+      - name: Deploy Gate
         run: echo "Promoting ${{ github.ref_name }} to Clinic Production"
