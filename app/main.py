@@ -32,7 +32,7 @@ try:
 
     X_gan = data["X_gan"]
 
-    epochs = 15
+    epochs = 2
     batch_size = 256
     epoch_steps = int((2 * X_train.shape[0] / batch_size) / 2)
     learning_rate = 2e-4
