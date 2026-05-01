@@ -34,6 +34,19 @@ jobs:
       - name: Data Validation
         run: python app/check_data.py
 
+      - name: Train and Log MLflow
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: 17-doha
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        run: python -m app.main
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-info
+          path: model_info.txt
+
   build:
     name: The Build
     needs: validate
@@ -44,6 +57,27 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install MLflow
+        run: pip install mlflow
+
+      - name: Download a Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: model-info
+          path: .
+
+      - name: Run Threshold Check
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: 17-doha
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        run: python -m app.check_threshold
+
       - name: Docker Setup
         uses: docker/login-action@v3
         with:
@@ -52,17 +86,11 @@ jobs:
 
       - name: Docker Build
         run: |
+          RUN_ID=$(cat model_info.txt)
           docker build \
-            --build-arg RUN_ID=${{ secrets.MLFLOW_RUN_ID }} \
+            --build-arg RUN_ID=$RUN_ID \
             --build-arg DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }} \
-            -t ${{ secrets.DOCKER_USERNAME }}/safe-health-app:latest . > logs_error.txt 2>&1
-
-      - name: Upload Error Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-crash-logs
-          path: logs_error.txt
+            -t ${{ secrets.DOCKER_USERNAME }}/safe-health-app:latest .
 
   deploy:
     name: The Promotion
