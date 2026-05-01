@@ -1,13 +1,14 @@
-name: Safe Health
+name: Safe Health Pipeline
 on:
   push:
-    branches:
+    branches: 
       - main
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
   validate:
+    name: The Integrity Audit
     runs-on: ubuntu-latest
     steps:
       - name: Clone Code
@@ -16,17 +17,53 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.10
 
       - name: Install Dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt 
 
-      - name: Configure DVC Credentials
-        run: |
-          dvc remote modify origin --local access_key_id ${{ secrets.DAGSHUB_TOKEN }}
-          dvc remote modify origin --local secret_access_key ${{ secrets.DAGSHUB_TOKEN }}
       - name: Pull Data
-        run: dvc pull -r origin
+        run: dvc pull
 
       - name: Data Validation
-        run: python app/check_data.py
+        run: python check_data.py  
+
+  build:
+    name: The Forensic Build
+    needs: validate
+    runs-on: ubuntu-latest
+    if: success() && ((github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[build-image]')) || startsWith(github.ref, 'refs/tags/'))
+    
+    steps:
+      - name: Clone Code
+        uses: actions/checkout@v4
+
+      - name: Docker Setup
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: Docker build
+        run: |
+          docker build \
+            --build-arg RUN_ID=${{ secrets.MLFLOW_RUN_ID }} \
+            --build-arg DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/app:latest . > logs_error.txt 2>&1
+      
+      - name: Upload Error Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-crash-logs
+          path: logs_error.txt
+  
+  deploy:
+    name: The Production Promotion
+    needs: build 
+    runs-on: ubuntu-latest
+    if: success() && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Deploy
+        run: echo "Promoting ${{ github.ref_name }} to Clinic Production"
